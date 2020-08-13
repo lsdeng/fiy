@@ -1,28 +1,65 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_boost/flutter_boost.dart';
 
 void main() => runApp(MyApp());
 
-class MyApp extends StatelessWidget {
-  // This widget is the root of your application.
+class MyApp extends StatefulWidget {
+  @override
+  State<StatefulWidget> createState() {
+    return AppState();
+  }
+}
+
+class AppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+
+    FlutterBoost.singleton.registerPageBuilders(<String, PageBuilder>{
+      'embeded': (String pageName, Map<String, dynamic> params, String _) => MyHomePage(),
+      'flutterPage': (String pageName, Map<String, dynamic> params, String _) {
+        print('flutterPage params:$params');
+
+        return MyHomePage();
+      },
+    });
+
+    FlutterBoost.singleton.addBoostNavigatorObserver(TestBoostNavigatorObserver());
+  }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or press Run > Flutter Hot Reload in a Flutter IDE). Notice that the
-        // counter didn't reset back to zero; the application is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+    return MaterialApp(title: 'Flutter Boost example', builder: FlutterBoost.init(postPush: _onRoutePushed), home: Container(color: Colors.white));
+  }
+
+  void _onRoutePushed(
+    String pageName,
+    String uniqueId,
+    Map<String, dynamic> params,
+    Route<dynamic> route,
+    Future<dynamic> _,
+  ) {}
+}
+
+class TestBoostNavigatorObserver extends NavigatorObserver {
+  @override
+  void didPush(Route<dynamic> route, Route<dynamic> previousRoute) {
+    print('flutterboost#didPush');
+  }
+
+  @override
+  void didPop(Route<dynamic> route, Route<dynamic> previousRoute) {
+    print('flutterboost#didPop');
+  }
+
+  @override
+  void didRemove(Route<dynamic> route, Route<dynamic> previousRoute) {
+    print('flutterboost#didRemove');
+  }
+
+  @override
+  void didReplace({Route<dynamic> newRoute, Route<dynamic> oldRoute}) {
+    print('flutterboost#didReplace');
   }
 }
 
@@ -44,78 +81,35 @@ class MyHomePage extends StatefulWidget {
   _MyHomePageState createState() => _MyHomePageState();
 }
 
+class MyHomePageV2 extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.blue,
+    );
+  }
+}
+
 class _MyHomePageState extends State<MyHomePage> {
-  MethodChannel _channel = const MethodChannel('toast');
-  EventChannel eventChannel = EventChannel('event');
-  BasicMessageChannel messageChannel =
-      BasicMessageChannel('event', StandardMessageCodec());
   int _counter = 0;
 
-  @override
-  void initState() {
-    super.initState();
-    eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
-
-    Future<dynamic> platformCallHandler(MethodCall call) async {
-      if (call != null && call.method != null) {
-        switch (call.method) {
-          case "test":
-            final Map<String, dynamic> params = <String, dynamic>{
-              'msg': "method flutter ==》 native",
-            };
-            this._channel.invokeMethod("log", params);
-            break;
-        }
-      }
-    }
-
-    _channel.setMethodCallHandler(platformCallHandler);
-  }
-
-  void _onEvent(Object event) {
-    final Map<String, dynamic> params = <String, dynamic>{
-      'msg': event,
-    };
-
-    this._channel.invokeMethod("toast", params);
-  }
-
-  void _onError(Object error) {
-    final Map<String, dynamic> params = <String, dynamic>{
-      'msg': "onError",
-    };
-    this._channel.invokeMethod("toast", params);
-  }
-
   void _incrementCounter() {
-//    final Map<String, dynamic> params = <String, dynamic>{
-//      'msg': "hello1",
-//    };
+//    setState(() {
+//      _counter++;
+//    });
 
-//    this._channel.invokeMethod("toast", params);
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+    FlutterBoost.singleton.open("native://native", urlParams: {"from": 1}).then(((Map<dynamic, dynamic> value) {
+      print('hello ${value}');
+    }));
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        title: Text("helle"),
       ),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
@@ -138,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You ',
+              'You have pushed the button this many times:',
             ),
             Text(
               '$_counter',
