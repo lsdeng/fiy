@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() => runApp(MyApp());
 
 class MyApp extends StatelessWidget {
   // This widget is the root of your application.
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -43,9 +45,54 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  MethodChannel _channel = const MethodChannel('toast');
+  EventChannel eventChannel = EventChannel('event');
+  BasicMessageChannel messageChannel =
+      BasicMessageChannel('event', StandardMessageCodec());
   int _counter = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    eventChannel.receiveBroadcastStream().listen(_onEvent, onError: _onError);
+
+    Future<dynamic> platformCallHandler(MethodCall call) async {
+      if (call != null && call.method != null) {
+        switch (call.method) {
+          case "test":
+            final Map<String, dynamic> params = <String, dynamic>{
+              'msg': "method flutter ==》 native",
+            };
+            this._channel.invokeMethod("log", params);
+            break;
+        }
+      }
+    }
+
+    _channel.setMethodCallHandler(platformCallHandler);
+  }
+
+  void _onEvent(Object event) {
+    final Map<String, dynamic> params = <String, dynamic>{
+      'msg': event,
+    };
+
+    this._channel.invokeMethod("toast", params);
+  }
+
+  void _onError(Object error) {
+    final Map<String, dynamic> params = <String, dynamic>{
+      'msg': "onError",
+    };
+    this._channel.invokeMethod("toast", params);
+  }
+
   void _incrementCounter() {
+//    final Map<String, dynamic> params = <String, dynamic>{
+//      'msg': "hello1",
+//    };
+
+//    this._channel.invokeMethod("toast", params);
     setState(() {
       // This call to setState tells the Flutter framework that something has
       // changed in this State, which causes it to rerun the build method below
@@ -91,7 +138,7 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You have pushed the button this many times:',
+              'You ',
             ),
             Text(
               '$_counter',
