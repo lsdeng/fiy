@@ -1,5 +1,8 @@
+import 'package:fiy/model/counter.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_boost/flutter_boost.dart';
+import 'package:flutter_mobx/flutter_mobx.dart';
+import 'package:provider/provider.dart';
 
 void main() => runApp(MyApp());
 
@@ -16,7 +19,8 @@ class AppState extends State<MyApp> {
     super.initState();
 
     FlutterBoost.singleton.registerPageBuilders(<String, PageBuilder>{
-      'embeded': (String pageName, Map<String, dynamic> params, String _) => MyHomePage(),
+      'embeded': (String pageName, Map<String, dynamic> params, String _) =>
+          MyHomePage(),
       'flutterPage': (String pageName, Map<String, dynamic> params, String _) {
         print('flutterPage params:$params');
 
@@ -24,12 +28,22 @@ class AppState extends State<MyApp> {
       },
     });
 
-    FlutterBoost.singleton.addBoostNavigatorObserver(TestBoostNavigatorObserver());
+    FlutterBoost.singleton
+        .addBoostNavigatorObserver(TestBoostNavigatorObserver());
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(title: 'Flutter Boost example', builder: FlutterBoost.init(postPush: _onRoutePushed), home: Container(color: Colors.white));
+    return MultiProvider(
+        providers: [
+          Provider<Counter>(
+            create: (_) => Counter(),
+          )
+        ],
+        child: MaterialApp(
+            title: 'Flutter Boost example',
+            builder: FlutterBoost.init(postPush: _onRoutePushed),
+            home: Container(color: Colors.white)));
   }
 
   void _onRoutePushed(
@@ -94,23 +108,23 @@ class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
   void _incrementCounter() {
-//    setState(() {
-//      _counter++;
-//    });
-
-    FlutterBoost.singleton.open("native://native", urlParams: {"from": 1}).then(((Map<dynamic, dynamic> value) {
-      print('hello ${value}');
-    }));
+//
+//    FlutterBoost.singleton.open("native://native", urlParams: {"from": 1}).then(
+//        ((Map<dynamic, dynamic> value) {
+//      print('hello ${value}');
+//    }));
   }
 
   @override
   Widget build(BuildContext context) {
+    final diceCounter = Provider.of<Counter>(context);
+
     return Scaffold(
       appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text("helle"),
-      ),
+          // Here we take the value from the MyHomePage object that was created by
+          // the App.build method, and use it to set our appbar title.
+          title: Observer(
+              builder: (BuildContext context) => Text('${diceCounter.sum}'))),
       body: Center(
         // Center is a layout widget. It takes a single child and positions it
         // in the middle of the parent.
@@ -134,15 +148,17 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               'You have pushed the button this many times:',
             ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.display1,
+            Observer(
+              builder: (_) => Text(
+                '${diceCounter.value}',
+                style: Theme.of(context).textTheme.display1,
+              ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
+        onPressed: diceCounter.increment,
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
