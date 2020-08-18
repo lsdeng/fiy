@@ -4,6 +4,8 @@ import 'package:flutter_boost/flutter_boost.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
 
+import 'model/CounterProvider.dart';
+
 void main() => runApp(MyApp());
 
 class MyApp extends StatefulWidget {
@@ -38,7 +40,8 @@ class AppState extends State<MyApp> {
         providers: [
           Provider<Counter>(
             create: (_) => Counter(),
-          )
+          ),
+          ChangeNotifierProvider(create: (_) => CounterProvider()),
         ],
         child: MaterialApp(
             title: 'Flutter Boost example',
@@ -46,13 +49,11 @@ class AppState extends State<MyApp> {
             home: Container(color: Colors.white)));
   }
 
-  void _onRoutePushed(
-    String pageName,
-    String uniqueId,
-    Map<String, dynamic> params,
-    Route<dynamic> route,
-    Future<dynamic> _,
-  ) {}
+  void _onRoutePushed(String pageName,
+      String uniqueId,
+      Map<String, dynamic> params,
+      Route<dynamic> route,
+      Future<dynamic> _,) {}
 }
 
 class TestBoostNavigatorObserver extends NavigatorObserver {
@@ -118,11 +119,13 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     final diceCounter = Provider.of<Counter>(context);
+    final originCounter = Provider.of<CounterProvider>(context);
+
 
     return Scaffold(
       appBar: AppBar(
-          // Here we take the value from the MyHomePage object that was created by
-          // the App.build method, and use it to set our appbar title.
+        // Here we take the value from the MyHomePage object that was created by
+        // the App.build method, and use it to set our appbar title.
           title: Observer(
               builder: (BuildContext context) => Text('${diceCounter.sum}'))),
       body: Center(
@@ -146,19 +149,26 @@ class _MyHomePageState extends State<MyHomePage> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
             Text(
-              'You have pushed the button this many times:',
+                '${context.watch<CounterProvider>().count}',
             ),
             Observer(
-              builder: (_) => Text(
-                '${diceCounter.value}',
-                style: Theme.of(context).textTheme.display1,
-              ),
+              builder: (_) =>
+                  Text(
+                    '${diceCounter.value}',
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .display1,
+                  ),
             ),
           ],
         ),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: diceCounter.increment,
+        onPressed: () {
+          diceCounter.increment();
+          originCounter.increment();
+        },
         tooltip: 'Increment',
         child: Icon(Icons.add),
       ), // This trailing comma makes auto-formatting nicer for build methods.
